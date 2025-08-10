@@ -1,0 +1,5 @@
+Playwright==1.30.0
+PyQt5==5.15.7
+pandas==1.5.3
+openpyxl==3.0.10
+xlsxwriter==3.0.3
