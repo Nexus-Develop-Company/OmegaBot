@@ -12,7 +12,7 @@ from Utiles.utils import (
 class ToggleButton(QtWidgets.QWidget):
     toggled = QtCore.pyqtSignal()
     
-    def __init__(self, left_label, right_label, default=None, parent=None):
+    def __init__(self, left_label, right_label, default, parent=None):
         super().__init__(parent)
         self.left_label = left_label
         self.right_label = right_label
@@ -114,7 +114,7 @@ class ToggleButton(QtWidgets.QWidget):
 
 class CustomSelect(QtWidgets.QWidget):
     changed = QtCore.pyqtSignal()
-    def __init__(self, options, default=None, parent=None, block_first_reselect=False):
+    def __init__(self, options, default, parent=None, block_first_reselect=False):
         super().__init__(parent)
         self.options = options
         self.block_first_reselect = block_first_reselect
@@ -327,11 +327,10 @@ class StrategyPage(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(40, 40, 40, 40)
         layout.setSpacing(25)
-
         # Fila de tres componentes principales
         row = QtWidgets.QHBoxLayout()
         row.addStretch(1)
-
+        
         # Ticker
         ticker_widget = QtWidgets.QWidget()
         ticker_layout = QtWidgets.QVBoxLayout(ticker_widget)
@@ -345,7 +344,7 @@ class StrategyPage(QtWidgets.QWidget):
             margin-bottom: 5px;
         """)
         ticker_layout.addWidget(ticker_label)
-        self.ticker_select = CustomSelect(["SPX", "SPY", "IWM", "QQQ", "AAPL", "TSLA"], default="SPY")
+        self.ticker_select = CustomSelect(["SPX", "SPY", "IWM", "QQQ", "AAPL", "TSLA"], default=config["ticker"] if config and "ticker" in config else "SPY")
         self.ticker_select.button.clicked.connect(self.changed.emit)
         ticker_layout.addWidget(self.ticker_select)
         row.addWidget(ticker_widget)
@@ -370,7 +369,7 @@ class StrategyPage(QtWidgets.QWidget):
              "Long Call", "Long Call Spread", "Long Put", "Long Put Spread", "Ratio Spread",
              "Short Call", "Short Call Spread", "Short Put", "Short Put Spread",
              "Short Straddle", "Short Strangle"],
-            default="Select strategy",
+            default=config["strategy"] if config and "strategy" in config else "Select strategy",
             block_first_reselect=True
         )
         self.strat_select.changed.connect(self.changed.emit)
@@ -392,7 +391,7 @@ class StrategyPage(QtWidgets.QWidget):
             margin-bottom: 5px;
         """)
         pct_layout.addWidget(pct_label)
-        self.pct_select = CustomSelect(["Delta", "OTM", "Fixed Premium", "Strike Offset"], default="Delta")
+        self.pct_select = CustomSelect(["Delta", "OTM", "Fixed Premium", "Strike Offset"], default=config["pct_type"] if config and "pct_type" in config else "Delta")
         self.pct_select.button.clicked.connect(self.changed.emit)
         pct_layout.addWidget(self.pct_select)
         row.addWidget(pct_widget)
@@ -408,9 +407,9 @@ class StrategyPage(QtWidgets.QWidget):
         row2.addStretch(1)
         
         # Toggle buttons
-        self.buy_sell = ToggleButton("Sell", "Buy", default="Buy")
+        self.buy_sell = ToggleButton("Sell", "Buy", default=config["buy_sell"] if config and "buy_sell" in config else "Buy")
         self.buy_sell.toggled.connect(self.changed.emit)
-        self.call_put = ToggleButton("Call", "Put", default="Put")
+        self.call_put = ToggleButton("Call", "Put", default=config["call_put"] if config and "call_put" in config else "Put")
         self.call_put.toggled.connect(self.changed.emit)
         
         row2.addWidget(self.buy_sell)
@@ -419,17 +418,17 @@ class StrategyPage(QtWidgets.QWidget):
 
         # Campos numéricos con labels al lado
         row2.addSpacing(25)
-        self.qty_input = NumericInputWithLabel("QTY", 1, 1, 999)
+        self.qty_input = NumericInputWithLabel("QTY", config["qty"] if config and "qty" in config else 1, 1, 999)
         self.qty_input.valueChanged.connect(self.changed.emit)
         row2.addWidget(self.qty_input)
 
         row2.addSpacing(25)
-        self.percent_input = NumericInputWithLabel("%", 15, 0, 100)
+        self.percent_input = NumericInputWithLabel("%", config["percent"] if config and "percent" in config else 15, 0, 100)
         self.percent_input.valueChanged.connect(self.changed.emit)
         row2.addWidget(self.percent_input)
 
         row2.addSpacing(25)
-        self.dte_input = NumericInputWithLabel("DTE", 90, 0, 999)
+        self.dte_input = NumericInputWithLabel("DTE", config["dte"] if config and "dte" in config else 90, 0, 999)
         self.dte_input.valueChanged.connect(self.changed.emit)
         row2.addWidget(self.dte_input)
 
@@ -456,7 +455,7 @@ class StrategyPage(QtWidgets.QWidget):
             color: #ecf0f1;
         """)
         
-        self.use_extract_dte = ToggleButton("No", "Yes", default="No")
+        self.use_extract_dte = ToggleButton("No", "Yes", default=config["use_extract_dte"] if config and "use_extract_dte" in config else "No")
         self.use_extract_dte.toggled.connect(self.changed.emit)
         
         dte_container.addWidget(labelDTE)
@@ -473,7 +472,7 @@ class StrategyPage(QtWidgets.QWidget):
             color: #ecf0f1;
         """)
         
-        self.round_strike = ToggleButton("No", "Yes", default="No")
+        self.round_strike = ToggleButton("No", "Yes", default=config["round_strike"] if config and "round_strike" in config else "No")
         self.round_strike.toggled.connect(self.changed.emit)
         
         strike_container.addWidget(labelStrike)
@@ -492,7 +491,7 @@ class StrategyPage(QtWidgets.QWidget):
 
         # Multiplicador por defecto 0
         row3.addSpacing(30)
-        self.mult_input = NumericInputWithLabel("Multiplier", 0, 0, 100)
+        self.mult_input = NumericInputWithLabel("Multiplier", config["multiplier"] if config and "multiplier" in config else 0, 0, 100)
         self.mult_input.valueChanged.connect(self.changed.emit)
         row3.addWidget(self.mult_input)
 

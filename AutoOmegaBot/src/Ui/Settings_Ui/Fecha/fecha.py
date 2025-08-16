@@ -4,21 +4,22 @@ from Utiles.assets import CALENDAR_SVG
 from Utiles.utils import validate_date_format
 
 class DateInputWithCalendar(QtWidgets.QWidget):
-    dateChanged = QtCore.pyqtSignal(str)
+    dateChanged = QtCore.pyqtSignal(str)  # CAMBIADO: Emite MM/DD/YYYY directamente
     
-    def __init__(self, placeholder="DD/MM/YYYY", default_date=None, parent=None):
+    def __init__(self, placeholder, default_date, parent=None):
         super().__init__(parent)
-        
+        self.setup_ui(placeholder, default_date)
+                
+    def setup_ui(self, placeholder, default_date):
         layout = QtWidgets.QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
         
-        # Input de fecha editable
         self.date_input = QtWidgets.QLineEdit()
-        self.date_input.setPlaceholderText(placeholder)
+        self.date_input.setPlaceholderText(placeholder)  # Ahora será "MM/DD/AAAA"
+        
         if default_date:
-            # Convertir formato interno YYYY-MM-DD a DD/MM/YYYY para mostrar
-            self.date_input.setText(self.convert_to_display_format(default_date))
+            self.date_input.setText(default_date)
         
         self.date_input.setStyleSheet("""
             QLineEdit {
@@ -26,10 +27,11 @@ class DateInputWithCalendar(QtWidgets.QWidget):
                 color: #ecf0f1;
                 border: 2px solid #34495e;
                 border-radius: 8px;
-                padding: 8px 12px;
+                padding: 10px 12px;
                 font-size: 13px;
                 font-weight: bold;
-                min-height: 20px;
+                min-height: 18px;
+                min-width: 120px;
             }
             QLineEdit:focus {
                 border-color: #3498db;
@@ -38,6 +40,7 @@ class DateInputWithCalendar(QtWidgets.QWidget):
                 border-color: #5d6d7e;
             }
         """)
+        
         self.date_input.textChanged.connect(self.on_text_changed)
         
         # Botón de calendario con icono SVG
@@ -52,13 +55,15 @@ class DateInputWithCalendar(QtWidgets.QWidget):
         scaled_icon = icon_pixmap.scaled(20, 20, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         
         self.calendar_btn.setIcon(QtGui.QIcon(scaled_icon))
+        self.calendar_btn.setToolTip("Abrir calendario")
         self.calendar_btn.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
-                color: white;
                 border: none;
-                border-radius: 8px;
-                font-weight: bold;
+                border-radius: 6px;
+                padding: 8px;
+                min-width: 36px;
+                min-height: 36px;
             }
             QPushButton:hover {
                 background-color: #2980b9;
@@ -71,67 +76,49 @@ class DateInputWithCalendar(QtWidgets.QWidget):
         
         layout.addWidget(self.date_input)
         layout.addWidget(self.calendar_btn)
-    
-    def convert_to_display_format(self, date_str):
-        """Convertir YYYY-MM-DD a DD/MM/YYYY"""
-        try:
-            if '-' in date_str and len(date_str) == 10:  # formato yyyy-mm-dd
-                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-                return date_obj.strftime("%d/%m/%Y")
-            elif '/' in date_str:  # ya está en formato dd/mm/yyyy
-                return date_str
-            return date_str
-        except:
-            return date_str
-    
-    def convert_to_internal_format(self, date_str):
-        """Convertir DD/MM/YYYY a YYYY-MM-DD"""
-        try:
-            if '/' in date_str and len(date_str) == 10:  # formato dd/mm/yyyy
-                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
-                return date_obj.strftime("%Y-%m-%d")
-            elif '-' in date_str:  # ya está en formato yyyy-mm-dd
-                return date_str
-            return date_str
-        except:
-            return date_str
-    
+
     def on_text_changed(self, text):
-        # Emitir cambio en formato interno
-        if text.strip():
-            internal_format = self.convert_to_internal_format(text)
-            self.dateChanged.emit(internal_format)
+        """
+        SIMPLIFICADO: Solo validar y emitir MM/DD/YYYY
+        """
+        from Utiles.utils import validate_date_format
+        
+        if validate_date_format(text):
+            # SIMPLIFICADO: Emitir directamente en MM/DD/YYYY
+            self.dateChanged.emit(text)
         else:
             self.dateChanged.emit("")
+
+    def set_date(self, date_string):
+        """
+        SIMPLIFICADO: Recibir MM/DD/YYYY directamente
+        """
+        if date_string:
+            # NO CONVERTIR - ya viene en MM/DD/YYYY
+            self.date_input.setText(date_string)
+        else:
+            self.date_input.clear()
+
+    def get_date(self):
+        """
+        SIMPLIFICADO: Retornar MM/DD/YYYY directamente
+        """
+        from Utiles.utils import validate_date_format
         
-        # Restaurar estilo normal siempre
-        self.date_input.setStyleSheet("""
-            QLineEdit {
-                background-color: #2c3e50;
-                color: #ecf0f1;
-                border: 2px solid #34495e;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-size: 13px;
-                font-weight: bold;
-                min-height: 20px;
-            }
-            QLineEdit:focus {
-                border-color: #3498db;
-            }
-            QLineEdit:hover {
-                border-color: #5d6d7e;
-            }
-        """)
-    
+        text = self.date_input.text()
+        if validate_date_format(text):
+            return text  # RETORNAR MM/DD/YYYY directamente
+        return ""
+
     def show_native_calendar(self):
-        """ARREGLADO: Usar calendario nativo del sistema operativo"""
-        # Obtener fecha actual del input o usar hoy
+        """
+        MODIFICADO: Convertir solo para mostrar en calendario
+        """
         current_text = self.date_input.text()
         if current_text:
             try:
-                internal_date = self.convert_to_internal_format(current_text)
-                date_obj = datetime.strptime(internal_date, "%Y-%m-%d")
+                # TEMPORAL: Convertir MM/DD/YYYY a objeto date para calendario
+                date_obj = datetime.strptime(current_text, "%m/%d/%Y")
                 initial_date = QtCore.QDate(date_obj.year, date_obj.month, date_obj.day)
             except:
                 initial_date = QtCore.QDate.currentDate()
@@ -142,11 +129,11 @@ class DateInputWithCalendar(QtWidgets.QWidget):
         date_dialog = QtWidgets.QDialog(self)
         date_dialog.setWindowTitle("Seleccionar Fecha")
         date_dialog.setModal(True)
-        date_dialog.setFixedSize(400, 300)
+        date_dialog.setFixedSize(450, 350)
         
         layout = QtWidgets.QVBoxLayout(date_dialog)
+        layout.setContentsMargins(10, 10, 10, 10)
         
-        # Calendario nativo
         calendar = QtWidgets.QCalendarWidget()
         calendar.setSelectedDate(initial_date)
         calendar.setGridVisible(True)
@@ -156,31 +143,12 @@ class DateInputWithCalendar(QtWidgets.QWidget):
             QCalendarWidget {
                 background-color: #2c3e50;
                 color: #ecf0f1;
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: bold;
+                border: 2px solid #34495e;
+                border-radius: 8px;
             }
             
-            /* ARREGLADO: Header horizontal (días de la semana) */
-            QCalendarWidget QWidget#qt_calendar_calendarview QHeaderView::section {
-                background-color: #348db;
-                color: white;
-                padding: 5px;
-                border: 1px solid #2980b9;
-                font-weight: bold;
-                font-size: 11px;
-            }
-            
-            /* ARREGLADO: Header vertical (números de semana) */
-            QCalendarWidget QWidget#qt_calendar_calendarview QHeaderView::section:vertical {
-                background-color: #34495e;
-                color: #ecf0f1;
-                padding: 5px;
-                border: 1px solid #5d6d7e;
-                font-weight: bold;
-                min-width: 30px;
-            }
-            
-            /* ARREGLADO: Celdas de días */
             QCalendarWidget QTableView {
                 background-color: #34495e;
                 color: #ecf0f1;
@@ -188,99 +156,69 @@ class DateInputWithCalendar(QtWidgets.QWidget):
                 selection-color: white;
                 gridline-color: #5d6d7e;
                 outline: none;
-            }
-            
-            /* ARREGLADO: Items individuales (días) */
-            QCalendarWidget QAbstractItemView:enabled {
-                color: #ecf0f1;
-                background-color: transparent;
-                font-weight: bold;
-            }
-            
-            /* ARREGLADO: Día seleccionado */
-            QCalendarWidget QAbstractItemView:selected {
-                background-color: #3498db;
-                color: white;
-                border: 2px solid #1abc9c;
-            }
-            
-            /* ARREGLADO: Día con foco */
-            QCalendarWidget QAbstractItemView:focus {
-                background-color: #2980b9;
-                color: white;
-            }
-            
-            /* ARREGLADO: Días del mes anterior/siguiente */
-            QCalendarWidget QAbstractItemView:disabled {
-                color: #7f8c8d;
-                background-color: transparent;
-            }
-            
-            /* ARREGLADO: Barra de navegación superior */
-            QCalendarWidget QWidget#qt_calendar_navigationbar {
-                background-color: #3498db;
-                border-radius: 6px;
-                margin: 2px;
-                padding: 2px;
-            }
-            
-            /* ARREGLADO: Botones de navegación */
-            QCalendarWidget QToolButton {
-                color: white;
-                background-color: transparent;
                 border: none;
-                padding: 5px;
-                border-radius: 4px;
-                font-weight: bold;
-                min-width: 30px;
-            }
-            
-            QCalendarWidget QToolButton:hover {
-                background-color: rgba(255, 255, 255, 0.2);
-            }
-            
-            QCalendarWidget QToolButton:pressed {
-                background-color: rgba(255, 255, 255, 0.3);
-            }
-            
-            /* ARREGLADO: SpinBoxes para mes y año */
-            QCalendarWidget QSpinBox {
-                background-color: #2c3e50;
-                color: #ecf0f1;
-                border: 1px solid #5d6d7e;
-                border-radius: 4px;
-                padding: 3px;
-                font-weight: bold;
-                min-width: 60px;
-            }
-            
-            QCalendarWidget QSpinBox:focus {
-                border-color: #1abc9c;
-            }
-            
-            QCalendarWidget QSpinBox::up-button, QCalendarWidget QSpinBox::down-button {
-                background-color: #3498db;
-                border: none;
-                width: 16px;
-                border-radius: 2px;
-            }
-            
-            QCalendarWidget QSpinBox::up-button:hover, QCalendarWidget QSpinBox::down-button:hover {
-                background-color: #2980b9;
-            }
-            
-            /* ARREGLADO: Forzar visibilidad de headers */
-            QCalendarWidget QHeaderView {
-                background-color: #3498db;
-                color: white;
             }
             
             QCalendarWidget QHeaderView::section {
                 background-color: #3498db;
                 color: white;
-                padding: 5px;
+                padding: 8px;
                 border: 1px solid #2980b9;
                 font-weight: bold;
+                font-size: 12px;
+            }
+            
+            QCalendarWidget QTableView::item {
+                color: #ecf0f1;
+                background-color: #34495e;
+                padding: 5px;
+                border: 1px solid #5d6d7e;
+            }
+            
+            QCalendarWidget QTableView::item:selected {
+                background-color: #3498db;
+                color: white;
+                font-weight: bold;
+            }
+            
+            QCalendarWidget QTableView::item:hover {
+                background-color: #5d6d7e;
+                color: white;
+            }
+            
+            QCalendarWidget QWidget#qt_calendar_navigationbar {
+                background-color: #3498db;
+                border-radius: 6px;
+                margin: 3px;
+            }
+            
+            QCalendarWidget QToolButton {
+                color: white;
+                background-color: #3498db;
+                border: none;
+                padding: 8px;
+                border-radius: 4px;
+                font-weight: bold;
+                margin: 2px;
+            }
+            
+            QCalendarWidget QToolButton:hover {
+                background-color: #2980b9;
+            }
+            
+            QCalendarWidget QSpinBox {
+                background-color: #2c3e50;
+                color: #ecf0f1;
+                border: 1px solid #5d6d7e;
+                border-radius: 4px;
+                padding: 5px;
+                font-weight: bold;
+                margin: 2px;
+            }
+            
+            QCalendarWidget QSpinBox:focus {
+                border-color: #1abc9c;
+                background-color: #34495e;
             }
         """)
         
@@ -288,6 +226,7 @@ class DateInputWithCalendar(QtWidgets.QWidget):
         
         # Botones
         button_layout = QtWidgets.QHBoxLayout()
+        button_layout.setSpacing(10)
         
         cancel_btn = QtWidgets.QPushButton("Cancelar")
         cancel_btn.setStyleSheet("""
@@ -296,10 +235,13 @@ class DateInputWithCalendar(QtWidgets.QWidget):
                 color: white;
                 border: none;
                 border-radius: 6px;
-                padding: 8px 16px;
+                padding: 10px 20px;
                 font-weight: bold;
+                font-size: 13px;
             }
-            QPushButton:hover { background-color: #c0392b; }
+            QPushButton:hover { 
+                background-color: #c0392b; 
+            }
         """)
         cancel_btn.clicked.connect(date_dialog.reject)
         
@@ -310,10 +252,13 @@ class DateInputWithCalendar(QtWidgets.QWidget):
                 color: white;
                 border: none;
                 border-radius: 6px;
-                padding: 8px 16px;
+                padding: 10px 20px;
                 font-weight: bold;
+                font-size: 13px;
             }
-            QPushButton:hover { background-color: #229954; }
+            QPushButton:hover { 
+                background-color: #229954; 
+            }
         """)
         ok_btn.clicked.connect(date_dialog.accept)
         
@@ -323,28 +268,73 @@ class DateInputWithCalendar(QtWidgets.QWidget):
         
         layout.addLayout(button_layout)
         
-        # Mostrar diálogo
+        date_dialog.show()
+        QtCore.QTimer.singleShot(50, lambda: self.force_calendar_style(calendar))
+        
+        # SIMPLIFICADO: Emitir MM/DD/YYYY directamente
         if date_dialog.exec_() == QtWidgets.QDialog.Accepted:
             selected_date = calendar.selectedDate()
-            # Mostrar en formato DD/MM/YYYY
-            display_date = selected_date.toString("dd/MM/yyyy")
+            # CONVERTIR: De QDate a MM/DD/YYYY
+            display_date = selected_date.toString("MM/dd/yyyy")
             self.date_input.setText(display_date)
-            # Emitir en formato interno YYYY-MM-DD
-            internal_date = selected_date.toString("yyyy-MM-dd")
-            self.dateChanged.emit(internal_date)
-    
-    def get_date(self):
-        # Devolver en formato interno
-        display_text = self.date_input.text()
-        return self.convert_to_internal_format(display_text) if display_text else ""
-    
-    def set_date(self, date_str):
-        # Recibir formato interno y mostrar en formato display
-        if date_str:
-            display_format = self.convert_to_display_format(date_str)
-            self.date_input.setText(display_format)
-        else:
-            self.date_input.setText("")
+            self.dateChanged.emit(display_date)  # EMITIR MM/DD/YYYY
+
+    def force_calendar_style(self, calendar):
+        """
+        Forzar el estilo en los headers después de que se rendericen
+        """
+        try:
+            for header in calendar.findChildren(QtWidgets.QHeaderView):
+                header.setStyleSheet("""
+                    QHeaderView {
+                        background-color: #3498db;
+                        color: white;
+                        font-weight: bold;
+                        border: none;
+                    }
+                    QHeaderView::section {
+                        background-color: #3498db;
+                        color: white;
+                        padding: 8px;
+                        border: 1px solid #2980b9;
+                        font-weight: bold;
+                        font-size: 12px;
+                    }
+                """)
+            
+            for table in calendar.findChildren(QtWidgets.QTableView):
+                table.setStyleSheet("""
+                    QTableView {
+                        background-color: #34495e;
+                        color: #ecf0f1;
+                        selection-background-color: #3498db;
+                        selection-color: white;
+                        gridline-color: #5d6d7e;
+                        outline: none;
+                        border: none;
+                    }
+                    QTableView::item {
+                        color: #ecf0f1;
+                        background-color: #34495e;
+                        padding: 5px;
+                        border: 1px solid #5d6d7e;
+                    }
+                    QTableView::item:selected {
+                        background-color: #3498db;
+                        color: white;
+                        font-weight: bold;
+                    }
+                    QTableView::item:hover {
+                        background-color: #5d6d7e;
+                        color: white;
+                    }
+                """)
+                
+            calendar.update()
+            calendar.repaint()
+            
+        except Exception as e:
+            print(f"Error aplicando estilo: {e}")
 
 class DatePage(QtWidgets.QWidget):
     changed = QtCore.pyqtSignal()
@@ -386,7 +376,7 @@ class DatePage(QtWidgets.QWidget):
         """)
         start_layout.addWidget(start_label)
         
-        self.start_date = DateInputWithCalendar("DD/MM/YYYY", config.get("start_date"))
+        self.start_date = DateInputWithCalendar("DD/MM/YYYY", default_date=config.get("start_date"))
         self.start_date.dateChanged.connect(self.changed.emit)
         start_layout.addWidget(self.start_date)
         
@@ -419,7 +409,7 @@ class DatePage(QtWidgets.QWidget):
         """)
         end_layout.addWidget(end_label)
         
-        self.end_date = DateInputWithCalendar("DD/MM/YYYY", config.get("end_date"))
+        self.end_date = DateInputWithCalendar("DD/MM/YYYY", default_date=config.get("end_date"))
         self.end_date.dateChanged.connect(self.changed.emit)
         end_layout.addWidget(self.end_date)
         

@@ -3,6 +3,7 @@ from Ui.Settings_Ui.option_list_ui import OptionListUi
 from Ui.Settings_Ui.General.general import GeneralPage
 from Ui.Settings_Ui.Fecha.fecha import DatePage
 from Ui.Settings_Ui.Estrategia.estrategia import StrategyPage
+from Ui.Settings_Ui.Fondos.fondos import FundsPage
 from Ui.Settings_Ui.status_widget import SystemStatusWidget
 from Utiles.utils import load_config, save_config, validate_date_range
 
@@ -28,7 +29,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.setMinimumSize(700, 500)
         
         self.changes_made = False
-        self.config = config or load_config()
+        self.config = load_config()
         # NUEVO: Para compartir archivo seleccionado con widget de estado
         self.selected_file = getattr(parent, 'selected_file', None) if parent else None
 
@@ -43,6 +44,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.menu_list.addItem("General")
         self.menu_list.addItem("Fecha")
         self.menu_list.addItem("Estrategia")
+        self.menu_list.addItem("Fondos")
         self.menu_list.setCurrentRow(0)
         main_layout.addWidget(self.menu_list)
 
@@ -66,9 +68,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.general_page = GeneralPage(self.config, self)
         self.fecha_page = DatePage(self.config, self)
         self.estrategia_page = StrategyPage(self.config, self)
+        self.fondo_page = FundsPage(self.config, self)
         self.stack.addWidget(self.general_page)
         self.stack.addWidget(self.fecha_page)
         self.stack.addWidget(self.estrategia_page)
+        self.stack.addWidget(self.fondo_page)
 
         # Botones
         self.save_button = QtWidgets.QPushButton("Guardar", self)
@@ -172,6 +176,7 @@ class ConfigWindow(QtWidgets.QDialog):
         config.update(self.general_page.get_config())
         config.update(self.fecha_page.get_config())
         config.update(self.estrategia_page.get_config())
+        config.update(self.fondo_page.get_config())
         return config
 
     def save_config(self):

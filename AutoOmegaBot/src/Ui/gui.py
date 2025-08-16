@@ -3,12 +3,10 @@ from Ui.Settings_Ui.setting_gui import ConfigWindow
 # CARGA DESDE UTILS: Todas las funciones de lógica de negocio
 from Utiles.utils import (
     load_config,              # Cargar configuración persistente
-    check_internet_connection, # Verificar conexión cada 5s
     get_connection_status,     # Estado formateado para UI
     validate_system_ready,     # Validación completa del sistema
     save_logs,                # Guardar logs al cerrar
     get_file_info,            # Info de archivo seleccionado
-    get_system_status_summary, # Resumen del estado para UI
     get_validation_status,    # Estado detallado para logs
     get_debug_lines_for_ui,   # Líneas formateadas para UI
     get_current_timestamp,    # NUEVO: Timestamp actual
@@ -396,10 +394,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_widget = StatusWidget("Estado", "Detenido", "#e74c3c")
         self.uptime_widget = StatusWidget("Tiempo Activo", "00:00:00", "#9b59b6")
         self.analyzed_widget = StatusWidget("Enlaces Analizados", "0", "#27ae60")
+        self.total_enlaces_widget = StatusWidget("Total de Enlaces", "0", "#27ae60")
         
         stats_layout.addWidget(self.status_widget)
         stats_layout.addWidget(self.uptime_widget)
         stats_layout.addWidget(self.analyzed_widget)
+        stats_layout.addWidget(self.total_enlaces_widget)
         
         main_layout.addLayout(stats_layout)
 
@@ -625,7 +625,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def show_complete_debug_in_logs(self):
         """
-        MODIFICADO: Debug sin estrategia obligatoria, solo informativa
+        ARREGLADO: Debug divertido como el original + separación de carpetas
         """
         try:
             # UTILS: Obtener información completa de debug
@@ -655,39 +655,52 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.log_widget.add_log("📅 Fechas: ⚠️ NO CONFIGURADAS - ¡Ve a configuración! ⚙️", "WARNING")
             
-            # 4. MODIFICADO: Estrategia como informativa (no obligatoria)
+            # 4. Estrategia como informativa (igual que antes)
             self.log_widget.add_log(f"⚙️ Estrategia: ℹ️ INFORMATIVA{debug_info['strategy_info']}", "INFO")
             
-            # 5. ARREGLADO: Ruta completa de salida
+            self.log_widget.add_log(f"⚙️ Fondos y Asignación: ℹ️ INFORMATIVA{debug_info['funds_info']}", "INFO")
+            
+            # 5. SEPARADOR para carpetas
+            self.log_widget.add_log("🎯" + "-"*30 + " CARPETAS " + "-"*30, "INFO")
+            
+            # 6. Carpeta de salida (configurable)
             if debug_info['general_info']:
-                self.log_widget.add_log(f"📁 Carpeta Salida: ✅ CONFIGURADA{debug_info['general_info']}", "SUCCESS")
+                self.log_widget.add_log(f"📊 Salida Excel: ✅ CONFIGURABLE{debug_info['general_info']}", "SUCCESS")
+            
+            # 7. Carpetas fijas (Config y Logs)
+            self.log_widget.add_log(f"⚙️ Configuración: 🔒 FIJO - {debug_info['config_path']}", "INFO")
+            self.log_widget.add_log(f"📋 Logs: 🔒 FIJO - {debug_info['logs_path']}", "INFO")
             
             # Separador decorativo
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             
-            # Estado general final (sin estrategia)
+            # Estado general final CON ESTILO DIVERTIDO
             if status['overall_valid']:
                 self.log_widget.add_log("🚀 ESTADO GENERAL: ✅ ¡LISTO PARA DESPEGAR! 🎉", "SUCCESS")
                 self.log_widget.add_log("💪 ¡Todo perfecto! El bot está listo para analizar 📈", "SUCCESS")
+                self.log_widget.add_log("🎯 ¡Dale click a 'Iniciar Test' y vamos a hacer magia! ✨", "SUCCESS")
             else:
                 self.log_widget.add_log("🛑 ESTADO GENERAL: ❌ NO LISTO - ¡Faltan cositas! 😅", "ERROR")
-                self.log_widget.add_log("🔧 Revisa los elementos marcados con ❌", "ERROR")
+                self.log_widget.add_log("🔧 Revisa los elementos marcados con ❌ o ⚠️", "ERROR")
+                self.log_widget.add_log("😊 ¡Tranquilo! Solo faltan unos ajustes y estaremos listos 💪", "WARNING")
             
-            # Mostrar errores específicos con emojis (sin estrategia)
+            # Mostrar errores específicos con ESTILO DIVERTIDO
             if not status['overall_valid'] and status['errors']:
                 self.log_widget.add_log("🎯" + "="*50, "INFO")
-                self.log_widget.add_log("🔍 DETALLES DE LO QUE FALTA:", "ERROR")
+                self.log_widget.add_log("🔍 DETALLES DE LO QUE FALTA (¡No te preocupes, es fácil!):", "WARNING")
                 for i, error in enumerate(status['errors'], 1):
                     emoji = ["🔸", "🔹", "🔶", "🔷"][i % 4]
-                    self.log_widget.add_log(f"  {emoji} {error}", "ERROR")
+                    self.log_widget.add_log(f"  {emoji} {error} - ¡Vamos a arreglarlo! 💪", "ERROR")
             
             # Footer divertido
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             self.log_widget.add_log(f"🕐 Verificación completada: {datetime.datetime.now().strftime('%H:%M:%S')}", "INFO")
+            self.log_widget.add_log("🤖 OmegaBot está aquí para ayudarte - ¡Let's go! 🚀", "INFO")
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             
         except Exception as e:
             self.log_widget.add_log(f"💥 Error mostrando debug completo: {str(e)}", "ERROR")
+            self.log_widget.add_log("😅 ¡Ups! Algo falló, pero seguimos adelante 💪", "WARNING")
 
     def check_system_status_changes(self):
         """
@@ -833,45 +846,53 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def start_bot(self):
         """
-        NUEVO: Iniciar el bot de análisis
+        SIMPLIFICADO: Las fechas ya están en MM/DD/YYYY
         """
         try:
-            # UTILS: Validar sistema antes de iniciar
+            # ...existing code hasta logs...
             is_valid, error_message = validate_system_ready(self.config, self.selected_file)
             
             if not is_valid:
                 self.show_error("No se puede iniciar", error_message)
                 return
             
-            # Marcar inicio
             self.start_time = get_current_timestamp()
             self.analysis_count = 0
             self.bot_running = True
             
-            # Actualizar UI
             self.status_widget.update_value("Ejecutándose")
             self.status_widget.update_color("#27ae60")
             self.start_btn.setEnabled(False)
             self.stop_btn.setEnabled(True)
             
-            # Iniciar timer de tiempo
             self.uptime_timer.start(1000)
             
-            # Log de inicio
             self.log_widget.add_log("🚀 BOT INICIADO - Comenzando análisis...", "SUCCESS")
             self.log_widget.add_log(f"📊 Archivo: {os.path.basename(self.selected_file)}", "INFO")
             self.log_widget.add_log(f"⚙️ Estrategia: {self.config.get('strategy', 'N/A')}", "INFO")
-            self.log_widget.add_log(f"📅 Período: {self.config.get('start_date', 'N/A')} a {self.config.get('end_date', 'N/A')}", "INFO")
+            
+            # SIMPLIFICADO: Las fechas ya están en MM/DD/YYYY
+            start_date = self.config.get('start_date', 'N/A')
+            end_date = self.config.get('end_date', 'N/A')
+            
+            # AGREGADO: Información de fondos
+            from Utiles.utils import get_funds_config_summary
+            funds_summary = get_funds_config_summary(self.config)
+            self.log_widget.add_log(f"💰 Fondos: {funds_summary}", "INFO")
+            
+            
+            # SIN CONVERSIÓN - usar directamente
+            self.log_widget.add_log(f"📅 Período: {start_date} a {end_date}", "INFO")
             
             self.status_bar.showMessage("Bot ejecutándose - Analizando enlaces...")
             
-            # Aquí iría la lógica real del bot (simulación por ahora)
             QtCore.QTimer.singleShot(2000, self.simulate_analysis)
             
+          
         except Exception as e:
             self.log_widget.add_log(f"Error iniciando bot: {str(e)}", "ERROR")
             self.bot_running = False
-
+            
     def stop_bot(self):
         """
         NUEVO: Detener el bot de análisis

@@ -6,13 +6,22 @@ from Utiles.utils import get_output_folder, get_system_documents_folder  # AGREG
 class FilePathSelector(QtWidgets.QWidget):
     pathChanged = QtCore.pyqtSignal(str)
     
-    def __init__(self, title, default_path=None, placeholder=None, parent=None):
+    def __init__(self, title, description, placeholder_text="Selecciona una carpeta...", parent=None):
         super().__init__(parent)
         
-        # Layout principal
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
+        
+        # AGREGADO: Label de descripción que faltaba
+        self.description_label = QtWidgets.QLabel(description)
+        self.description_label.setStyleSheet("""
+            font-size: 11px;
+            color: #95a5a6;
+            font-style: italic;
+        """)
+        self.description_label.setWordWrap(True)
+        layout.addWidget(self.description_label)
         
         # Título
         title_label = QtWidgets.QLabel(title)
@@ -30,8 +39,8 @@ class FilePathSelector(QtWidgets.QWidget):
         
         # Input de ruta
         self.path_input = QtWidgets.QLineEdit()
-        if placeholder:
-            self.path_input.setPlaceholderText(placeholder)
+        if placeholder_text:
+            self.path_input.setPlaceholderText(placeholder_text)
         
         self.path_input.setStyleSheet("""
             QLineEdit {
@@ -81,23 +90,11 @@ class FilePathSelector(QtWidgets.QWidget):
         input_container.addWidget(browse_btn)
         layout.addLayout(input_container)
         
-        # Descripción
-        # ARREGLADO: Usar ruta por defecto si no hay default_path
-        if not default_path:
-            default_path = get_output_folder()
+        # ARREGLADO: Definir default_path antes de usarlo
+        default_path = get_output_folder()
         
         if default_path:
             self.path_input.setText(default_path)
-        
-        description = QtWidgets.QLabel()
-        description.setStyleSheet("""
-            font-size: 12px;
-            color: #95a5a6;
-            font-style: italic;
-        """)
-        description.setWordWrap(True)
-        self.description_label = description
-        layout.addWidget(description)
         
         # Actualizar descripción inicial
         self.update_description(default_path or "")
@@ -131,23 +128,22 @@ class FilePathSelector(QtWidgets.QWidget):
 
     def browse_folder(self):
         """
-        MODIFICADO: Crear estructura AutoOmega Bot al seleccionar carpeta
+        MODIFICADO: Solo crear carpeta Output en la ubicación seleccionada
         """
-        # ARREGLADO: Usar ruta por defecto como punto de partida
         current_path = self.path_input.text() if self.path_input.text() else get_output_folder()
         
         folder_path = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            "Seleccionar carpeta base (se creará AutoOmega Bot/Output dentro)",
+            "Seleccionar carpeta para archivos Excel (se creará carpeta Output)",
             current_path,
             QtWidgets.QFileDialog.ShowDirsOnly
         )
         
         if folder_path:
-            # AGREGADO: Crear estructura AutoOmega Bot/Output
+            # MODIFICADO: Solo crear carpeta Output
             try:
-                from Utiles.utils import ensure_autobot_structure
-                final_output_path = ensure_autobot_structure(folder_path)
+                from Utiles.utils import ensure_output_structure
+                final_output_path = ensure_output_structure(folder_path)
                 
                 # Mostrar la ruta final de Output
                 self.path_input.setText(final_output_path)
@@ -157,29 +153,27 @@ class FilePathSelector(QtWidgets.QWidget):
                 self.update_description(final_output_path)
                 
             except Exception as e:
-                # Fallback si hay error
-                print(f"Error creando estructura: {e}")
+                print(f"Error creando carpeta Output: {e}")
                 self.path_input.setText(folder_path)
                 self.pathChanged.emit(folder_path)
 
     def update_description(self, path):
         """
-        NUEVO: Actualizar descripción mostrando estructura creada
+        MODIFICADO: Mostrar que Config/Logs están fijos en Documents
         """
         try:
-            if path and "AutoOmega Bot" in path:
-                # Mostrar que se creó la estructura completa
-                base_path = path.split("AutoOmega Bot")[0].rstrip(os.sep)
-                self.description_label.setText(
-                    f"✅ Estructura creada en: {base_path}\n"
-                    f"📁 Archivos Excel: {path}\n"
-                    f"📁 Configuración: {os.path.join(os.path.dirname(path), 'Config')}\n"
-                    f"📁 Logs: {os.path.join(os.path.dirname(path), 'Logs')}"
-                )
-            else:
-                self.description_label.setText(f"Archivos se guardarán en: {path}")
+            from Utiles.utils import get_config_folder, get_logs_folder
+            
+            config_path = get_config_folder()
+            logs_path = get_logs_folder()
+            
+            self.description_label.setText(
+                f"📁 Archivos Excel: {path}\n"
+                f"📁 Configuración (fijo): {config_path}\n"
+                f"📁 Logs (fijo): {logs_path}"
+            )
         except Exception:
-            self.description_label.setText(f"Archivos se guardarán en: {path}")
+            self.description_label.setText(f"Archivos Excel se guardarán en: {path}")
 
     def get_path(self):
         """
@@ -232,7 +226,7 @@ class GeneralPage(QtWidgets.QWidget):
         
         self.output_path_selector = FilePathSelector(
             "Carpeta de Salida para Archivos Excel",
-            default_output_path,
+            "Selecciona la carpeta donde se guardarán los archivos Excel generados.",
             "Usar carpeta por defecto o seleccionar carpeta personalizada..."
         )
         self.output_path_selector.pathChanged.connect(self.changed.emit)
