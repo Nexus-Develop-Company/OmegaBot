@@ -1,27 +1,63 @@
+"""
+Módulo principal de la interfaz gráfica de OmegaBot.
+
+Este módulo contiene la implementación completa de la interfaz de usuario principal
+para el sistema de análisis de backtesting de opciones financieras OmegaBot.
+
+Classes:
+    StatusWidget: Widget personalizado para mostrar métricas del sistema
+    ActionButton: Botón personalizado con estilos y efectos visuales
+    LogWidget: Widget de logs con formato avanzado y colores
+    FileUploadButton: Botón especializado para selección de archivos
+    ErrorDialog: Diálogo personalizado para mostrar errores
+    MainWindow: Ventana principal de la aplicación
+
+Author: Nexus Corp
+Version: 1.0
+Date: 2025
+"""
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 from Ui.Settings_Ui.setting_gui import ConfigWindow
-# CARGA DESDE UTILS: Todas las funciones de lógica de negocio
 from Utiles.utils import (
-    load_config,              # Cargar configuración persistente
-    get_connection_status,     # Estado formateado para UI
-    validate_system_ready,     # Validación completa del sistema
-    save_logs,                # Guardar logs al cerrar
-    get_file_info,            # Info de archivo seleccionado
-    get_validation_status,    # Estado detallado para logs
-    get_debug_lines_for_ui,   # Líneas formateadas para UI
-    get_current_timestamp,    # NUEVO: Timestamp actual
-    format_execution_summary, # NUEVO: Resumen de ejecución
-    get_debug_info_complete,   # AGREGADO: Debug completo y divertido
-    
+    load_config,              
+    get_connection_status,     
+    validate_system_ready,     
+    save_logs,                
+    get_file_info,            
+    get_validation_status,    
+    get_debug_lines_for_ui,   
+    get_current_timestamp,    
+    format_execution_summary, 
+    get_debug_info_complete,   
 )
 from Utiles.assets import *
 import datetime
 import os
 
 class StatusWidget(QtWidgets.QWidget):
+    """
+    Widget personalizado para mostrar métricas del sistema en tiempo real.
+    
+    Muestra información como estado del bot, tiempo activo, enlaces analizados, etc.
+    con un diseño visual atractivo y colores dinámicos.
+    
+    Args:
+        title (str): Título del widget que se muestra en la parte superior
+        value (str): Valor inicial que se muestra con tipografía grande
+        color (str): Color de fondo del widget en formato hexadecimal
+        icon_svg (str, optional): SVG del icono a mostrar (no implementado)
+        parent (QWidget, optional): Widget padre
+        
+    Attributes:
+        value_label (QLabel): Label que contiene el valor principal del widget
+    TODO: Implementar soporte para iconos SVG en el layout
+    TODO: Agregar animaciones de transición al cambiar valores
+    TODO: Implementar tooltips informativos para cada métrica
+    """
     def __init__(self, title, value, color="#2980b9", icon_svg=None, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(180)  # Más altura para que se vean las letras
+        self.setFixedHeight(180)  
         self.setStyleSheet(f"""
             QWidget {{
                 background-color: {color};
@@ -35,22 +71,20 @@ class StatusWidget(QtWidgets.QWidget):
         """)
         
         layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)  # Más padding
+        layout.setContentsMargins(20, 20, 20, 20)  
         layout.setSpacing(15)
         
-        
-        # Textos con más espacio vertical
         text_layout = QtWidgets.QVBoxLayout()
         text_layout.setContentsMargins(0, 5, 0, 5)
         text_layout.setSpacing(8)
         
         title_label = QtWidgets.QLabel(title)
         title_label.setStyleSheet("font-size: 14px; font-weight: normal; opacity: 0.9; color: white;")
-        title_label.setMinimumHeight(20)  # Altura mínima para el título
+        title_label.setMinimumHeight(20)  
         
         self.value_label = QtWidgets.QLabel(str(value))
         self.value_label.setStyleSheet("font-size: 26px; font-weight: bold; color: white;")
-        self.value_label.setMinimumHeight(35)  # Altura mínima para el valor
+        self.value_label.setMinimumHeight(35)  
         
         text_layout.addWidget(title_label)
         text_layout.addWidget(self.value_label)
@@ -60,10 +94,25 @@ class StatusWidget(QtWidgets.QWidget):
         layout.addStretch()
     
     def update_value(self, value):
+        """
+        Actualiza el valor mostrado en el widget.
+        
+        Args:
+            value (str): Nuevo valor a mostrar    
+        TODO: Agregar validación de tipo de dato
+        TODO: Implementar animación de cambio de valor
+        """
         self.value_label.setText(str(value))
     
     def update_color(self, color):
-        # ARREGLADO: Mantener el color del texto siempre blanco
+        """
+        Actualiza el color de fondo del widget manteniendo el texto blanco.
+        
+        Args:
+            color (str): Nuevo color de fondo en formato hexadecimal            
+        TODO: Agregar validación de formato de color
+        TODO: Implementar transición suave de colores
+        """
         self.setStyleSheet(f"""
             QWidget {{
                 background-color: {color};
@@ -77,6 +126,21 @@ class StatusWidget(QtWidgets.QWidget):
         """)
 
 class ActionButton(QtWidgets.QPushButton):
+    """
+    Botón personalizado con estilos avanzados y efectos visuales.
+    
+    Proporciona un diseño moderno con efectos hover, pressed y disabled,
+    además de soporte opcional para iconos SVG.
+    
+    Args:
+        text (str): Texto a mostrar en el botón
+        icon_svg (str, optional): Código SVG del icono (no implementado completamente)
+        color (str): Color de fondo del botón en formato hexadecimal
+        parent (QWidget, optional): Widget padre
+    TODO: Completar implementación de iconos SVG
+    TODO: Agregar soporte para diferentes tamaños de botón
+    TODO: Implementar efectos de animación al hacer clic
+    """
     def __init__(self, text, icon_svg=None, color="#3498db", parent=None):
         super().__init__(text, parent)
         self.setFixedHeight(50)
@@ -114,12 +178,37 @@ class ActionButton(QtWidgets.QPushButton):
             self.setIconSize(QtCore.QSize(20, 20))
     
     def darken_color(self, color, factor):
+        """
+        Oscurece un color por un factor dado para efectos hover/pressed.
+        
+        Args:
+            color (str): Color en formato hexadecimal (#RRGGBB)
+            factor (float): Factor de oscurecimiento (0.0 - 1.0)
+            
+        Returns:
+            str: Color oscurecido en formato hexadecimal
+        TODO: Agregar validación de formato de color de entrada
+        TODO: Implementar función brightening para efectos contrarios
+        """
         color = color.lstrip('#')
         rgb = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
         darkened = tuple(int(c * (1 - factor)) for c in rgb)
         return f"#{darkened[0]:02x}{darkened[1]:02x}{darkened[2]:02x}"
 
 class LogWidget(QtWidgets.QTextEdit):
+    """
+    Widget especializado para mostrar logs del sistema con formato avanzado.
+    
+    Proporciona logs con colores, timestamps, niveles de severidad y
+    capacidad de guardar en formato plano para exportación.
+    
+    Attributes:
+        plain_logs (list): Lista de logs en formato plano para exportación
+    TODO: Implementar filtrado de logs por nivel de severidad
+    TODO: Agregar búsqueda en tiempo real dentro de los logs
+    TODO: Implementar exportación directa a archivo desde el widget
+    TODO: Agregar límite máximo de logs para evitar uso excesivo de memoria
+    """
     def __init__(self):
         super().__init__()
         self.setReadOnly(True)
@@ -150,17 +239,24 @@ class LogWidget(QtWidgets.QTextEdit):
             }
         """)
         
-        # Para tracking de logs planos
         self.plain_logs = []
 
     def add_log(self, message, level="INFO"):
+        """
+        Agrega un nuevo log al widget con formato y color según el nivel.
+        
+        Args:
+            message (str): Mensaje del log
+            level (str): Nivel del log (INFO, SUCCESS, ERROR, WARNING)
+        TODO: Agregar más niveles de log (DEBUG, CRITICAL)
+        TODO: Implementar configuración de formato de timestamp
+        TODO: Agregar numeración automática de logs
+        """
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         
-        # Guardar en lista plana para logs
         plain_message = f"[{timestamp}] {level}: {message}"
         self.plain_logs.append(plain_message)
         
-        # Formatear para display
         if level == "SUCCESS":
             color = "#27ae60"
             icon = "✓"
@@ -180,10 +276,35 @@ class LogWidget(QtWidgets.QTextEdit):
         self.moveCursor(QtGui.QTextCursor.End)
 
     def get_plain_logs(self):
-        """Obtener logs como texto plano para guardar en archivo"""
+        """
+        Obtiene todos los logs en formato texto plano para exportación.
+        
+        Returns:
+            str: Todos los logs concatenados con saltos de línea
+        TODO: Agregar opción de filtrar logs por rango de tiempo
+        TODO: Implementar compresión de logs para archivos grandes
+        """
         return "\n".join(self.plain_logs)
 
 class FileUploadButton(QtWidgets.QPushButton):
+    """
+    Botón especializado para selección y carga de archivos.
+    
+    Maneja la selección de archivos CSV/Excel y emite señales cuando
+    se selecciona un archivo válido. Actualiza su texto para mostrar
+    el archivo seleccionado.
+    
+    Signals:
+        file_selected (str): Emitida cuando se selecciona un archivo válido
+        
+    Attributes:
+        selected_file (str): Ruta del archivo actualmente seleccionado
+        
+    TODO: Agregar validación de formato de archivo antes de seleccionar
+    TODO: Implementar preview del contenido del archivo
+    TODO: Agregar soporte para drag & drop de archivos
+    TODO: Mostrar información adicional del archivo (tamaño, fecha)
+    """
     file_selected = QtCore.pyqtSignal(str)
     
     def __init__(self, parent=None):
@@ -212,6 +333,16 @@ class FileUploadButton(QtWidgets.QPushButton):
         self.clicked.connect(self.select_file)
     
     def select_file(self):
+        """
+        Abre el diálogo de selección de archivos y procesa la selección.
+        
+        Formatos soportados: CSV, XLSX, XLS
+        Actualiza el texto del botón con el nombre del archivo seleccionado.
+        
+        TODO: Agregar validación de contenido del archivo
+        TODO: Implementar historial de archivos recientes
+        TODO: Agregar opción de limpiar selección actual
+        """
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, 
             "Seleccionar archivo con enlaces",
@@ -226,9 +357,33 @@ class FileUploadButton(QtWidgets.QPushButton):
             self.file_selected.emit(file_path)
     
     def get_selected_file(self):
+        """
+        Obtiene la ruta del archivo actualmente seleccionado.
+        
+        Returns:
+            str: Ruta del archivo seleccionado o None si no hay selección
+            
+        TODO: Agregar validación de existencia del archivo
+        """
         return self.selected_file
 
 class ErrorDialog(QtWidgets.QDialog):
+    """
+    Diálogo personalizado para mostrar errores con diseño consistente.
+    
+    Proporciona un diálogo modal con estilo dark theme que muestra
+    mensajes de error con icono y formateo apropiado.
+    
+    Args:
+        parent (QWidget): Widget padre del diálogo
+        title (str): Título de la ventana del diálogo
+        message (str): Mensaje de error a mostrar
+        
+    TODO: Agregar diferentes tipos de diálogo (Warning, Info, Question)
+    TODO: Implementar botones personalizables (Yes/No, Retry/Cancel)
+    TODO: Agregar soporte para mensajes HTML con formato avanzado
+    TODO: Implementar sonidos de notificación según el tipo de error
+    """
     def __init__(self, parent, title, message):
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -272,12 +427,32 @@ class ErrorDialog(QtWidgets.QDialog):
         layout.addWidget(ok_button)
 
 class MainWindow(QtWidgets.QMainWindow):
+    """
+    Ventana principal de la aplicación OmegaBot.
+    
+    Contiene toda la interfaz principal incluyendo paneles de estado,
+    controles de bot, logs del sistema y menús de navegación.
+    Coordina todas las operaciones de análisis y configuración.
+    
+    Attributes:
+        bot_running (bool): Estado actual del bot (ejecutándose/detenido)
+        config (dict): Configuración actual cargada del sistema
+        selected_file (str): Archivo actualmente seleccionado para análisis
+        last_system_status (dict): Último estado del sistema para detectar cambios
+        start_time (datetime): Tiempo de inicio de la ejecución actual
+        analysis_count (int): Contador de análisis completados
+        
+    TODO: Implementar sistema de plugins para extensibilidad
+    TODO: Agregar soporte para múltiples archivos simultáneos
+    TODO: Implementar sistema de notificaciones push
+    TODO: Agregar métricas avanzadas de rendimiento
+    TODO: Implementar backup automático de configuraciones
+    """
     def __init__(self):
         super().__init__()
         self.setWindowTitle("OmegaBot - Options Backtest Analysis")
         self.setMinimumSize(1000, 700)
         
-        # Establecer el logo como icono de la ventana
         icon = QtGui.QIcon()
         pixmap = QtGui.QPixmap()
         pixmap.loadFromData(OMEGABOT_LOGO_SVG.encode(), "SVG")
@@ -313,14 +488,9 @@ class MainWindow(QtWidgets.QMainWindow):
         """)
         
         self.bot_running = False
-        # UTILS: Cargar configuración desde utils.py
         self.config = load_config()  
         self.selected_file = None
-        
-        # NUEVO: Para tracking de cambios en logs
         self.last_system_status = None
-        
-        # NUEVO: Para tracking de tiempo de ejecución
         self.start_time = None
         self.analysis_count = 0
         
@@ -328,32 +498,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_menu()
         self.setup_status_bar()
         
-        # Timer para conexión
         self.connection_timer = QtCore.QTimer()
         self.connection_timer.timeout.connect(self.check_connection)
         self.connection_timer.start(5000)
         
-        # Timer para logs
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.check_system_status_changes)
         self.status_timer.start(5000)
         
-        # NUEVO: Timer para actualizar tiempo de ejecución cada segundo
         self.uptime_timer = QtCore.QTimer()
         self.uptime_timer.timeout.connect(self.update_uptime_display)
         
-        # Revisión inicial
         QtCore.QTimer.singleShot(1000, self.initial_system_check)
 
     def setup_ui(self):
+        """
+        Configura todos los elementos de la interfaz de usuario principal.
+        
+        Incluye header con logo, panel de métricas, controles de archivo,
+        botones de control del bot y área de logs del sistema.
+        
+        TODO: Hacer el layout responsivo para diferentes tamaños de pantalla
+        TODO: Agregar tema claro/oscuro configurable
+        TODO: Implementar personalización de posición de paneles
+        TODO: Agregar soporte para múltiples monitores
+        """
         central_widget = QtWidgets.QWidget()
         self.setCentralWidget(central_widget)
         
         main_layout = QtWidgets.QVBoxLayout(central_widget)
         main_layout.setContentsMargins(20, 15, 20, 15)
-        main_layout.setSpacing(20)  # Más espacio entre elementos
+        main_layout.setSpacing(20)  
 
-        # Header
         header_layout = QtWidgets.QHBoxLayout()
         
         logo_label = QtWidgets.QLabel()
@@ -387,7 +563,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
         main_layout.addLayout(header_layout)
 
-        # Panel de estadísticas con más altura
         stats_layout = QtWidgets.QHBoxLayout()
         stats_layout.setSpacing(15)
         
@@ -403,7 +578,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
         main_layout.addLayout(stats_layout)
 
-        # Botón de archivo simple
         file_layout = QtWidgets.QHBoxLayout()
         file_layout.addStretch()
         
@@ -415,7 +589,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
         main_layout.addLayout(file_layout)
 
-        # Panel de control
         control_layout = QtWidgets.QHBoxLayout()
         control_layout.addStretch()
         
@@ -435,11 +608,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
         main_layout.addLayout(control_layout)
 
-        # ALTERNATIVA: Layout específico para logs con spacing controlado
         logs_container = QtWidgets.QWidget()
         logs_layout = QtWidgets.QVBoxLayout(logs_container)
-        logs_layout.setContentsMargins(0, 0, 0, 0)  # Sin margen
-        logs_layout.setSpacing(0)  # Solo 5px entre label y widget
+        logs_layout.setContentsMargins(0, 0, 0, 0)  
+        logs_layout.setSpacing(0)  
         
         log_label = QtWidgets.QLabel("📊 Logs del Sistema")
         log_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #ecf0f1; margin: 0px;")
@@ -457,7 +629,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 font-size: 18px;
                 line-height: 2;
                 font-weight: 800;
-                margin-top: 0px;  /* Sin margen superior */
+                margin-top: 0px;  
             }
             QScrollBar:vertical {
                 border: none;
@@ -481,6 +653,17 @@ class MainWindow(QtWidgets.QMainWindow):
         main_layout.addWidget(logs_container)
 
     def setup_menu(self):
+        """
+        Configura la barra de menús principal con todas las opciones.
+        
+        Incluye menús de Archivo, Análisis y Ayuda con sus respectivos
+        atajos de teclado y funcionalidades asociadas.
+        
+        TODO: Agregar menú de Ver para opciones de visualización
+        TODO: Implementar menú de Herramientas para utilidades adicionales
+        TODO: Agregar historial de archivos recientes en menú Archivo
+        TODO: Implementar personalización de atajos de teclado
+        """
         menubar = self.menuBar()
         
         file_menu = menubar.addMenu('Archivo')
@@ -497,7 +680,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
         file_menu.addSeparator()
         
-        # OPCIÓN 2: Mantener Ctrl+Q específico
         exit_action = QtWidgets.QAction('Salir', self)
         exit_action.setShortcut(QtGui.QKeySequence('Ctrl+S'))
         exit_action.triggered.connect(self.close)
@@ -522,10 +704,19 @@ class MainWindow(QtWidgets.QMainWindow):
         help_menu.addAction(about_action)
 
     def setup_status_bar(self):
+        """
+        Configura la barra de estado inferior con información del sistema.
+        
+        Incluye indicador de conexión a internet y mensajes de estado
+        general del sistema y operaciones actuales.
+        
+        TODO: Agregar más indicadores de estado (CPU, memoria, disco)
+        TODO: Implementar indicador de progreso para operaciones largas
+        TODO: Agregar reloj/timestamp en tiempo real
+        """
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Sistema listo - Cargar archivo y configurar estrategia antes de iniciar")
         
-        # Widget de conexión en el status bar (lado derecho)
         self.connection_label = QtWidgets.QLabel()
         self.connection_label.setStyleSheet("""
             QLabel {
@@ -540,21 +731,25 @@ class MainWindow(QtWidgets.QMainWindow):
         """)
         self.connection_label.setText("🟢 Sin conexión")
         
-        # Agregar al status bar (lado derecho)
         self.status_bar.addPermanentWidget(self.connection_label)
-        
-        # Actualizar estado inicial
         self.check_connection()
 
     def check_connection(self):
         """
-        OPTIMIZADO: Usar función de utils para verificar conexión
-        UTILS: get_connection_status() - obtiene estado formateado
+        Verifica el estado de conexión a internet y actualiza la UI.
+        
+        Utiliza las funciones de utilidad para verificar conectividad
+        y actualiza el indicador visual en la barra de estado.
+        
+        Returns:
+            bool: True si hay conexión, False en caso contrario
+            
+        TODO: Implementar verificación de conexión a APIs específicas
+        TODO: Agregar reintentos automáticos en caso de falla
+        TODO: Mostrar velocidad de conexión cuando sea posible
         """
-        # UTILS: Obtener estado desde utils.py
         is_connected, status_text = get_connection_status()
         
-        # UI: Actualizar indicador visual (se mantiene igual)
         if is_connected:
             self.connection_label.setStyleSheet("""
                 QLabel {
@@ -582,7 +777,6 @@ class MainWindow(QtWidgets.QMainWindow):
             """)
             self.connection_label.setText("🟢 Sin conexión")
         
-        # OPTIMIZADO: Actualizar botón solo si no está ejecutándose
         if not self.bot_running:
             self.update_start_button_state()
         
@@ -590,29 +784,35 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_start_button_state(self):
         """
-        OPTIMIZADO: Usar validación completa de utils.py
-        UTILS: validate_system_ready() - validación completa del sistema
+        Actualiza el estado del botón de inicio basado en validaciones del sistema.
+        
+        Verifica todos los requisitos necesarios para ejecutar el bot
+        y habilita/deshabilita el botón de inicio apropiadamente.
+        
+        TODO: Mostrar lista detallada de requisitos faltantes en tooltip
+        TODO: Implementar validación en tiempo real mientras se edita configuración
         """
-        # UTILS: Validación completa desde utils.py
         is_valid, error_message = validate_system_ready(self.config, self.selected_file)
         
-        # UI: Actualizar estado del botón
         self.start_btn.setEnabled(is_valid)
         self.start_btn.setToolTip(error_message if not is_valid else "")
 
     def initial_system_check(self):
         """
-        MODIFICADO: Mostrar debug completo en logs (no en consola)
+        Realiza verificación inicial completa del sistema al iniciar la aplicación.
+        
+        Verifica estado de todos los componentes y muestra información
+        detallada en los logs para orientar al usuario.
+        
+        TODO: Implementar verificación de actualizaciones al inicio
+        TODO: Validar integridad de archivos de configuración
+        TODO: Verificar permisos de escritura en directorios necesarios
         """
         self.log_widget.add_log("Iniciando OmegaBot - Verificando sistema...", "INFO")
         
-        # UTILS: Obtener estado inicial del sistema
         initial_status = get_validation_status(self.config, self.selected_file)
-        
-        # MODIFICADO: Mostrar debug completo en logs en lugar de consola
         self.show_complete_debug_in_logs()
         
-        # Establecer estado inicial para tracking
         self.last_system_status = {
             'internet': initial_status['internet'],
             'file_valid': initial_status['file_valid'],
@@ -620,61 +820,55 @@ class MainWindow(QtWidgets.QMainWindow):
             'overall_valid': initial_status['overall_valid']
         }
         
-        # UTILS: Actualizar botón basado en estado inicial
         self.update_start_button_state()
 
     def show_complete_debug_in_logs(self):
         """
-        ARREGLADO: Debug divertido como el original + separación de carpetas
+        Muestra información completa de debug del sistema en los logs.
+        
+        Presenta un resumen detallado y visualmente atractivo del estado
+        de todos los componentes del sistema con emojis y formato colorido.
+        
+        TODO: Agregar opción para exportar debug info a archivo
+        TODO: Implementar diferentes niveles de detalle configurable
+        TODO: Agregar timestamp de última verificación de cada componente
         """
         try:
-            # UTILS: Obtener información completa de debug
             debug_info = get_debug_info_complete(self.config, self.selected_file)
             status = debug_info['status']
             
-            # Header divertido igual que en consola
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             self.log_widget.add_log("🤖 OMEGABOT - ESTADO COMPLETO DEL SISTEMA 🤖", "INFO")
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             
-            # 1. Estado de Internet con info detallada
             if status['internet']:
                 self.log_widget.add_log(f"🌐 Internet: ✅ CONECTADO - {debug_info['connection_info']}", "SUCCESS")
             else:
                 self.log_widget.add_log(f"🌐 Internet: ❌ DESCONECTADO - {debug_info['connection_info']}", "ERROR")
             
-            # 2. Estado del archivo con info detallada
             if status['file_valid']:
                 self.log_widget.add_log(f"📄 Archivo: ✅ VÁLIDO{debug_info['file_info']}", "SUCCESS")
             else:
                 self.log_widget.add_log("📄 Archivo: ❌ NO SELECCIONADO - ¡Sube tu archivo primero! 📁", "ERROR")
             
-            # 3. Estado de fechas con info detallada
             if status['dates_valid']:
                 self.log_widget.add_log(f"📅 Fechas: ✅ CONFIGURADAS{debug_info['dates_info']}", "SUCCESS")
             else:
                 self.log_widget.add_log("📅 Fechas: ⚠️ NO CONFIGURADAS - ¡Ve a configuración! ⚙️", "WARNING")
             
-            # 4. Estrategia como informativa (igual que antes)
             self.log_widget.add_log(f"⚙️ Estrategia: ℹ️ INFORMATIVA{debug_info['strategy_info']}", "INFO")
-            
             self.log_widget.add_log(f"⚙️ Fondos y Asignación: ℹ️ INFORMATIVA{debug_info['funds_info']}", "INFO")
             
-            # 5. SEPARADOR para carpetas
             self.log_widget.add_log("🎯" + "-"*30 + " CARPETAS " + "-"*30, "INFO")
             
-            # 6. Carpeta de salida (configurable)
             if debug_info['general_info']:
                 self.log_widget.add_log(f"📊 Salida Excel: ✅ CONFIGURABLE{debug_info['general_info']}", "SUCCESS")
             
-            # 7. Carpetas fijas (Config y Logs)
             self.log_widget.add_log(f"⚙️ Configuración: 🔒 FIJO - {debug_info['config_path']}", "INFO")
             self.log_widget.add_log(f"📋 Logs: 🔒 FIJO - {debug_info['logs_path']}", "INFO")
             
-            # Separador decorativo
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             
-            # Estado general final CON ESTILO DIVERTIDO
             if status['overall_valid']:
                 self.log_widget.add_log("🚀 ESTADO GENERAL: ✅ ¡LISTO PARA DESPEGAR! 🎉", "SUCCESS")
                 self.log_widget.add_log("💪 ¡Todo perfecto! El bot está listo para analizar 📈", "SUCCESS")
@@ -684,7 +878,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.log_widget.add_log("🔧 Revisa los elementos marcados con ❌ o ⚠️", "ERROR")
                 self.log_widget.add_log("😊 ¡Tranquilo! Solo faltan unos ajustes y estaremos listos 💪", "WARNING")
             
-            # Mostrar errores específicos con ESTILO DIVERTIDO
             if not status['overall_valid'] and status['errors']:
                 self.log_widget.add_log("🎯" + "="*50, "INFO")
                 self.log_widget.add_log("🔍 DETALLES DE LO QUE FALTA (¡No te preocupes, es fácil!):", "WARNING")
@@ -692,7 +885,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     emoji = ["🔸", "🔹", "🔶", "🔷"][i % 4]
                     self.log_widget.add_log(f"  {emoji} {error} - ¡Vamos a arreglarlo! 💪", "ERROR")
             
-            # Footer divertido
             self.log_widget.add_log("🎯" + "="*50, "INFO")
             self.log_widget.add_log(f"🕐 Verificación completada: {datetime.datetime.now().strftime('%H:%M:%S')}", "INFO")
             self.log_widget.add_log("🤖 OmegaBot está aquí para ayudarte - ¡Let's go! 🚀", "INFO")
@@ -704,12 +896,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def check_system_status_changes(self):
         """
-        MODIFICADO: Usar debug simplificado para cambios (no completo)
+        Monitorea cambios en el estado del sistema y los reporta en logs.
+        
+        Compara el estado actual con el último estado conocido y
+        reporta solo cuando hay cambios significativos para evitar spam.
+        
+        TODO: Implementar throttling para evitar demasiadas verificaciones
+        TODO: Agregar métricas de frecuencia de cambios de estado
+        TODO: Notificar cambios críticos con mayor prominencia
         """
-        # UTILS: Obtener estado actual detallado
         current_status = get_validation_status(self.config, self.selected_file)
         
-        # Crear hash del estado para comparar
         current_status_hash = {
             'internet': current_status['internet'],
             'file_valid': current_status['file_valid'],
@@ -717,27 +914,29 @@ class MainWindow(QtWidgets.QMainWindow):
             'overall_valid': current_status['overall_valid']
         }
         
-        # Solo loggear si hay cambios
         if self.last_system_status != current_status_hash:
             self.last_system_status = current_status_hash
             
-            # MODIFICADO: Mostrar cambio más compacto (no debug completo)
             self.log_widget.add_log("🔄 CAMBIO DETECTADO EN EL SISTEMA", "INFO")
-            
-            # UTILS: Obtener líneas de debug formateadas usando función de utils
             debug_lines = get_debug_lines_for_ui(current_status)
-            
-            # Loggear cada línea del debug con formato apropiado
             self.log_debug_lines(debug_lines)
 
     def log_debug_lines(self, debug_lines):
         """
-        Loggear líneas de debug con formato apropiado
+        Procesa y muestra líneas de debug con formato apropiado.
+        
+        Args:
+            debug_lines (list): Lista de líneas de debug a mostrar
+            
+        Determina automáticamente el nivel de log basado en el contenido
+        de cada línea para aplicar colores y formato apropiados.
+        
+        TODO: Implementar parser más sofisticado para detección de niveles
+        TODO: Agregar soporte para formato markdown en logs
         """
         try:
             for line in debug_lines:
-                if line.strip():  # Solo loggear líneas no vacías
-                    # Determinar tipo de log basado en el contenido
+                if line.strip():  
                     if "✓" in line:
                         level = "SUCCESS"
                     elif "✗" in line:
@@ -749,7 +948,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     
                     self.log_widget.add_log(line, level)
                 else:
-                    # Línea vacía para separación
                     self.log_widget.add_log("", "INFO")
                     
         except Exception as e:
@@ -757,23 +955,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_uptime_display(self):
         """
-        Actualizar display de tiempo de ejecución cada segundo
+        Actualiza la visualización del tiempo de ejecución cada segundo.
+        
+        Calcula y formatea el tiempo transcurrido desde que se inició
+        el bot y actualiza el widget correspondiente en tiempo real.
+        
+        TODO: Agregar opción de mostrar tiempo en diferentes formatos
+        TODO: Implementar histórico de tiempos de ejecución por sesión
+        TODO: Mostrar tiempo promedio de análisis por elemento
         """
         try:
             if self.start_time and self.bot_running:
-                # Calcular tiempo transcurrido
                 current_time = get_current_timestamp()
                 duration = current_time - self.start_time
                 
-                # Formatear en HH:MM:SS
                 total_seconds = int(duration.total_seconds())
                 hours = total_seconds // 3600
                 minutes = (total_seconds % 3600) // 60
                 seconds = total_seconds % 60
                 
                 time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-                
-                # Actualizar widget
                 self.uptime_widget.update_value(time_str)
                 
         except Exception as e:
@@ -781,7 +982,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def open_config(self):
         """
-        NUEVO: Abrir ventana de configuración
+        Abre la ventana de configuración modal.
+        
+        Crea y muestra la ventana de configuración, conectando
+        las señales apropiadas para manejar cambios de configuración.
+        
+        TODO: Implementar configuración no modal para edición en tiempo real
+        TODO: Agregar validación de configuración antes de cerrar ventana
+        TODO: Implementar backup de configuración antes de cambios
         """
         try:
             config_window = ConfigWindow(self.config, self)
@@ -792,11 +1000,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def on_file_selected(self, file_path):
         """
-        MODIFICADO: Debug completo al seleccionar archivo
+        Maneja la selección de un nuevo archivo para análisis.
+        
+        Args:
+            file_path (str): Ruta del archivo seleccionado
+            
+        Procesa la selección de archivo, actualiza la UI con información
+        del archivo y ejecuta verificaciones completas del sistema.
+        
+        TODO: Implementar validación de contenido del archivo seleccionado
+        TODO: Mostrar preview de los primeros registros del archivo
+        TODO: Detectar automáticamente formato y estructura del archivo
         """
         self.selected_file = file_path
         
-        # UTILS: Obtener información del archivo
         file_info = get_file_info(file_path)
         if file_info:
             self.log_widget.add_log(
@@ -810,46 +1027,62 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log_widget.add_log(f"📁 Archivo seleccionado: {os.path.basename(file_path)}", "SUCCESS")
             self.status_bar.showMessage(f"Archivo cargado: {os.path.basename(file_path)}")
         
-        # MODIFICADO: Mostrar debug completo después de seleccionar archivo
         self.show_complete_debug_in_logs()
-        
-        # UTILS: Revalidar usando utils
         self.update_start_button_state()
 
     def on_config_saved(self, new_config):
         """
-        MODIFICADO: Debug completo al guardar configuración
+        Maneja el guardado de nueva configuración.
+        
+        Args:
+            new_config (dict): Nueva configuración guardada
+            
+        Actualiza la configuración local, reporta el cambio en logs
+        y ejecuta verificaciones completas del sistema.
+        
+        TODO: Implementar validación de configuración antes de aplicar
+        TODO: Mantener histórico de configuraciones para rollback
+        TODO: Notificar qué elementos específicos de configuración cambiaron
         """
         self.config = new_config
         self.log_widget.add_log("⚙️ Configuración guardada exitosamente", "SUCCESS")
         self.status_bar.showMessage("Configuración actualizada")
         
-        # MODIFICADO: Mostrar debug completo después de guardar configuración
         self.show_complete_debug_in_logs()
-        
-        # UTILS: Revalidar usando utils
         self.update_start_button_state()
 
     def toggle_bot(self):
         """
-        NUEVO: Alternar estado del bot (iniciar/detener)
+        Alterna entre iniciar y detener el bot de análisis.
+        
+        Función principal que coordina el inicio o detención del bot
+        basado en su estado actual, manejando errores apropiadamente.
+        
+        TODO: Agregar confirmación antes de detener bot en proceso
+        TODO: Implementar pausa/resume además de start/stop
+        TODO: Guardar estado de ejecución para recuperación en caso de falla
         """
         try:
             if not self.bot_running:
-                # Iniciar bot
                 self.start_bot()
             else:
-                # Detener bot
                 self.stop_bot()
         except Exception as e:
             self.log_widget.add_log(f"Error alternando estado del bot: {str(e)}", "ERROR")
 
     def start_bot(self):
         """
-        SIMPLIFICADO: Las fechas ya están en MM/DD/YYYY
+        Inicia el proceso de análisis del bot.
+        
+        Valida todos los requisitos, inicializa contadores y timers,
+        actualiza la UI y comienza el proceso de análisis de datos.
+        
+        TODO: Implementar checkpoint/resume para análisis largos
+        TODO: Agregar estimación de tiempo de finalización
+        TODO: Implementar procesamiento en background thread
+        TODO: Agregar opción de análisis incremental
         """
         try:
-            # ...existing code hasta logs...
             is_valid, error_message = validate_system_ready(self.config, self.selected_file)
             
             if not is_valid:
@@ -871,56 +1104,50 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log_widget.add_log(f"📊 Archivo: {os.path.basename(self.selected_file)}", "INFO")
             self.log_widget.add_log(f"⚙️ Estrategia: {self.config.get('strategy', 'N/A')}", "INFO")
             
-            # SIMPLIFICADO: Las fechas ya están en MM/DD/YYYY
             start_date = self.config.get('start_date', 'N/A')
             end_date = self.config.get('end_date', 'N/A')
             
-            # AGREGADO: Información de fondos
             from Utiles.utils import get_funds_config_summary
             funds_summary = get_funds_config_summary(self.config)
             self.log_widget.add_log(f"💰 Fondos: {funds_summary}", "INFO")
-            
-            
-            # SIN CONVERSIÓN - usar directamente
             self.log_widget.add_log(f"📅 Período: {start_date} a {end_date}", "INFO")
             
             self.status_bar.showMessage("Bot ejecutándose - Analizando enlaces...")
-            
             QtCore.QTimer.singleShot(2000, self.simulate_analysis)
             
-          
         except Exception as e:
             self.log_widget.add_log(f"Error iniciando bot: {str(e)}", "ERROR")
             self.bot_running = False
             
     def stop_bot(self):
         """
-        NUEVO: Detener el bot de análisis
+        Detiene el proceso de análisis del bot.
+        
+        Finaliza el análisis actual, calcula métricas finales,
+        actualiza la UI y genera resumen de la ejecución.
+        
+        TODO: Implementar guardado de progreso parcial al detener
+        TODO: Agregar opción de generar reporte parcial
+        TODO: Permitir cancelación suave vs. cancelación forzada
         """
         try:
             if self.bot_running:
-                # Calcular tiempo total
                 end_time = get_current_timestamp()
                 
-                # UTILS: Generar resumen de ejecución
                 if self.start_time:
                     summary = format_execution_summary(self.start_time, end_time, self.analysis_count)
                     self.log_widget.add_log(summary, "INFO")
                 
-                # Marcar como detenido
                 self.bot_running = False
                 self.uptime_timer.stop()
                 
-                # Actualizar UI
                 self.status_widget.update_value("Detenido")
                 self.status_widget.update_color("#e74c3c")
                 self.start_btn.setEnabled(True)
                 self.stop_btn.setEnabled(False)
                 
-                # Reset tiempo si se detiene manualmente
                 self.uptime_widget.update_value("00:00:00")
                 
-                # Log de finalización
                 self.log_widget.add_log("⏹️ BOT DETENIDO por el usuario", "WARNING")
                 self.status_bar.showMessage("Bot detenido - Listo para nueva ejecución")
                 
@@ -929,72 +1156,95 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def simulate_analysis(self):
         """
-        NUEVO: Simulación de análisis (reemplazar con lógica real)
+        Simula el proceso de análisis para demostración.
+        
+        NOTA: Esta es una función temporal para demostración.
+        En producción debe ser reemplazada por la lógica real de análisis.
+        
+        TODO: REEMPLAZAR con lógica real de análisis de opciones
+        TODO: Implementar procesamiento de datos reales del archivo
+        TODO: Agregar cálculo de métricas financieras reales
+        TODO: Integrar con APIs de datos financieros
         """
         if self.bot_running:
-            # Simular progreso
             self.analysis_count += 1
             self.analyzed_widget.update_value(str(self.analysis_count))
             
-            # Simular logs de análisis
             if self.analysis_count % 5 == 0:
                 self.log_widget.add_log(f"📈 Procesados {self.analysis_count} enlaces", "SUCCESS")
             
-            # Continuar simulación o terminar
-            if self.analysis_count < 20:  # Simular 20 análisis
+            if self.analysis_count < 20:  
                 QtCore.QTimer.singleShot(1500, self.simulate_analysis)
             else:
-                # Terminar automáticamente
                 self.bot_completed()
 
     def bot_completed(self):
         """
-        NUEVO: Bot completó su ejecución automáticamente
+        Maneja la finalización exitosa del análisis automático.
+        
+        Se ejecuta cuando el bot completa todos los análisis programados,
+        genera reportes finales y actualiza la UI con el estado final.
+        
+        TODO: Generar archivo Excel con resultados reales
+        TODO: Implementar envío de notificaciones de finalización
+        TODO: Agregar validación de integridad de resultados
+        TODO: Implementar backup automático de resultados
         """
         try:
             if self.bot_running:
-                # Calcular tiempo total
                 end_time = get_current_timestamp()
                 
-                # UTILS: Generar resumen de ejecución
                 if self.start_time:
                     summary = format_execution_summary(self.start_time, end_time, self.analysis_count)
                     self.log_widget.add_log(summary, "SUCCESS")
                 
-                # Marcar como completado
                 self.bot_running = False
                 self.uptime_timer.stop()
                 
-                # Actualizar UI
                 self.status_widget.update_value("Completado")
                 self.status_widget.update_color("#3498db")
                 self.start_btn.setEnabled(True)
                 self.stop_btn.setEnabled(False)
                 
-                # Log de finalización exitosa
                 self.log_widget.add_log("✅ ANÁLISIS COMPLETADO EXITOSAMENTE", "SUCCESS")
                 self.log_widget.add_log(f"🎯 Total procesado: {self.analysis_count} enlaces", "SUCCESS")
                 self.status_bar.showMessage("Análisis completado - Revise los resultados")
-                
-                # TODO: Aquí se generaría y guardaría el archivo Excel de resultados
                 
         except Exception as e:
             self.log_widget.add_log(f"Error finalizando bot: {str(e)}", "ERROR")
 
     def show_error(self, title, message):
         """
-        NUEVO: Mostrar diálogo de error
+        Muestra un diálogo de error personalizado.
+        
+        Args:
+            title (str): Título del diálogo de error
+            message (str): Mensaje de error a mostrar
+            
+        Crea y muestra un diálogo de error con el estilo de la aplicación,
+        con fallback a logs si el diálogo falla.
+        
+        TODO: Implementar diferentes tipos de diálogos (warning, info, question)
+        TODO: Agregar logging automático de errores mostrados
+        TODO: Implementar sistema de reportes de errores
         """
         try:
             error_dialog = ErrorDialog(self, title, message)
             error_dialog.exec_()
         except Exception as e:
-            # Fallback a log si el diálogo falla
             self.log_widget.add_log(f"ERROR - {title}: {message}", "ERROR")
 
     def show_about(self):
         """
-        NUEVO: Mostrar información "Acerca de"
+        Muestra el diálogo "Acerca de" con información de la aplicación.
+        
+        Presenta información sobre la versión, desarrollador y
+        derechos de autor de OmegaBot con estilo consistente.
+        
+        TODO: Agregar información de versión dinámica desde archivo
+        TODO: Incluir enlaces a documentación y soporte
+        TODO: Mostrar información de librerías y dependencias utilizadas
+        TODO: Agregar checking de actualizaciones disponibles
         """
         try:
             about_dialog = QtWidgets.QMessageBox(self)
@@ -1030,14 +1280,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         """
-        NUEVO: Manejar cierre de la aplicación
+        Maneja el evento de cierre de la aplicación.
+        
+        Args:
+            event (QCloseEvent): Evento de cierre de Qt
+            
+        Realiza limpieza necesaria al cerrar, incluyendo detener el bot
+        si está ejecutándose y guardar logs de la sesión.
+        
+        TODO: Implementar confirmación antes de cerrar si hay análisis en curso
+        TODO: Guardar estado de la aplicación para restaurar en próximo inicio
+        TODO: Implementar limpieza de archivos temporales
+        TODO: Agregar backup automático de configuración al cerrar
         """
         try:
-            # Detener bot si está ejecutándose
             if self.bot_running:
                 self.stop_bot()
             
-            # UTILS: Guardar logs de la sesión
             log_content = self.log_widget.get_plain_logs()
             success, result = save_logs(log_content)
             
@@ -1046,7 +1305,6 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 print(f"Error guardando logs: {result}")
             
-            # Aceptar cierre
             event.accept()
             
         except Exception as e:
